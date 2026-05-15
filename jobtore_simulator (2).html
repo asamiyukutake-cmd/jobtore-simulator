@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ITコース収益シミュレーター｜ジョブトレ</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #F7F6F2; --surface: #FFFFFF; --surface2: #F0EEE8;
+  --border: rgba(0,0,0,0.1); --border-em: rgba(0,0,0,0.2);
+  --text: #1A1916; --text-sub: #6B6A65; --text-hint: #9E9D98;
+  --green: #1D9E75; --blue: #378ADD; --amber: #BA7517;
+  --red: #E24B4A; --coral: #D85A30;
+}
+body { font-family: 'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:2rem 1rem; }
+.container { max-width:720px; margin:0 auto; }
+header { margin-bottom:1.5rem; }
+.header-label { font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-hint); margin-bottom:6px; }
+h1 { font-size:22px; font-weight:500; }
+
+/* セクションカード */
+.section-card { background:var(--surface); border-radius:12px; border:0.5px solid var(--border); padding:1.25rem 1.5rem; margin-bottom:1rem; }
+.section-header { display:flex; align-items:center; gap:10px; margin-bottom:1.25rem; padding-bottom:0.75rem; border-bottom:0.5px solid var(--border); }
+.section-number { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; color:#fff; flex-shrink:0; }
+.section-title { font-size:14px; font-weight:600; }
+.section-subtitle { font-size:11px; color:var(--text-hint); margin-left:auto; }
+
+.sec-label { font-size:11px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--text-hint); margin:0 0 8px; }
+.input-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.input-row label { font-size:14px; color:var(--text); min-width:130px; }
+.input-row input[type=range] { flex:1; -webkit-appearance:none; height:4px; border-radius:2px; background:var(--surface2); outline:none; }
+.input-row input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--text); cursor:pointer; border:2px solid var(--surface); box-shadow:0 0 0 1px var(--border-em); }
+.input-row .val { font-size:14px; font-weight:500; min-width:52px; text-align:right; }
+
+.risk-card { background:var(--surface2); border-radius:10px; padding:12px 14px; margin-bottom:8px; }
+.risk-card-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
+.risk-badge { font-size:14px; font-weight:500; }
+.risk-stats { font-size:10px; color:var(--text-hint); }
+.rank-input-row { display:flex; align-items:center; gap:8px; }
+.rank-input-row input[type=range] { flex:1; -webkit-appearance:none; height:4px; border-radius:2px; background:rgba(0,0,0,0.1); outline:none; }
+.rank-input-row input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:var(--text); cursor:pointer; border:2px solid var(--surface2); }
+.rank-input-row .rval { font-size:13px; font-weight:500; min-width:30px; text-align:right; }
+
+.total-note { font-size:12px; color:var(--text-hint); margin-bottom:8px; }
+
+/* 選考時の結果カード（小） */
+.pre-results { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:1rem; }
+.pre-card { background:var(--surface2); border-radius:8px; padding:10px 12px; }
+.pre-card.featured { background:var(--surface); border:0.5px solid var(--border-em); }
+.pre-label { font-size:11px; color:var(--text-hint); margin-bottom:3px; }
+.pre-val { font-size:18px; font-weight:500; }
+
+/* 訓練中セクション */
+.monthly-section { background:var(--surface2); border-radius:8px; padding:12px 14px; margin-bottom:1rem; }
+.monthly-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.monthly-hint { font-size:10px; color:var(--text-hint); margin-bottom:10px; }
+.monthly-avg { display:flex; gap:16px; font-size:12px; padding:8px 10px; background:var(--surface); border-radius:6px; margin-top:8px; }
+.monthly-avg .ak { color:var(--text-sub); }
+.monthly-avg .av { font-weight:500; }
+
+.blank-section { background:var(--surface2); border-radius:8px; padding:20px; text-align:center; color:var(--text-hint); font-size:13px; margin-bottom:1rem; border:1.5px dashed var(--border-em); }
+
+/* 信号機 */
+.signal-box { border-radius:10px; border:0.5px solid var(--border); padding:1rem 1.25rem; margin-bottom:1rem; }
+.signal-header { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.signal-dot { width:14px; height:14px; border-radius:50%; flex-shrink:0; }
+.signal-title { font-size:14px; font-weight:500; }
+.signal-rows { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.sig-row { display:flex; justify-content:space-between; font-size:12px; }
+.sig-key { color:var(--text-sub); }
+.sig-val { font-weight:500; }
+
+/* 結果カード */
+.result-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-bottom:1.25rem; }
+.result-card { background:var(--surface2); border-radius:8px; padding:12px 14px; }
+.result-card.featured { background:var(--surface); border:0.5px solid var(--border-em); }
+.rc-label { font-size:11px; color:var(--text-hint); margin:0 0 4px; }
+.rc-val { font-size:20px; font-weight:500; margin:0; }
+
+.bar-section { margin-bottom:1rem; }
+.bar-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; font-size:12px; }
+.bar-label { min-width:80px; color:var(--text-sub); }
+.bar-outer { flex:1; height:14px; background:var(--surface2); border-radius:3px; overflow:hidden; }
+.bar-inner { height:100%; border-radius:3px; transition:width 0.3s ease; }
+.bar-green { background:var(--green); }
+.bar-green-light { background:var(--green); opacity:0.5; }
+.bar-blue { background:var(--blue); }
+.bar-yen { min-width:64px; text-align:right; font-weight:500; }
+
+.divider { border:none; border-top:0.5px solid var(--border); margin:1rem 0; }
+.benchmark-row { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.bm-card { text-align:center; padding:8px; background:var(--surface2); border-radius:8px; }
+.bm-label { font-size:11px; color:var(--text-hint); margin-bottom:3px; }
+.bm-val { font-size:14px; font-weight:500; }
+
+footer { text-align:center; font-size:11px; color:var(--text-hint); margin-top:2rem; padding-top:1rem; border-top:0.5px solid var(--border); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <p class="header-label">ジョブトレ 教育部門</p>
+    <h1>ITコース収益シミュレーター</h1>
+  </header>
+
+  <!-- ======= セクション1: 選考時 ======= -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-number" style="background:var(--green)">1</div>
+      <span class="section-title">選考時</span>
+      <span class="section-subtitle">合格者確定後に入力</span>
+    </div>
+
+    <p class="sec-label">定員</p>
+    <div class="input-row" style="margin-bottom:1.25rem">
+      <label>定員（名）</label>
+      <input type="range" id="rk-teiin" min="5" max="25" step="1" value="15" oninput="calcAll()">
+      <span class="val" id="rk-teiin-out">15名</span>
+    </div>
+
+    <p class="sec-label">リスク構成（面接後の印象で入力）</p>
+    <div class="risk-card" style="border-left:3px solid var(--green)">
+      <div class="risk-card-header">
+        <span class="risk-badge" style="color:var(--green)">低リスク</span>
+        <span class="risk-stats">BNなし・学習優位が多い → 在籍率85%</span>
+      </div>
+      <div class="rank-input-row">
+        <input type="range" id="rk-low" min="0" max="25" step="1" value="5" oninput="calcAll()">
+        <span class="rval" id="rk-low-out">5名</span>
+      </div>
+    </div>
+    <div class="risk-card" style="border-left:3px solid var(--amber)">
+      <div class="risk-card-header">
+        <span class="risk-badge" style="color:var(--amber)">中リスク</span>
+        <span class="risk-stats">リモート志望・異業種・こだわりが多い → 在籍率70%</span>
+      </div>
+      <div class="rank-input-row">
+        <input type="range" id="rk-mid" min="0" max="25" step="1" value="7" oninput="calcAll()">
+        <span class="rval" id="rk-mid-out">7名</span>
+      </div>
+    </div>
+    <div class="risk-card" style="border-left:3px solid var(--red)">
+      <div class="risk-card-header">
+        <span class="risk-badge" style="color:var(--red)">高リスク</span>
+        <span class="risk-stats">受講環境・コミュ力・Webリテラシーが多い → 在籍率55%</span>
+      </div>
+      <div class="rank-input-row">
+        <input type="range" id="rk-high" min="0" max="25" step="1" value="3" oninput="calcAll()">
+        <span class="rval" id="rk-high-out">3名</span>
+      </div>
+    </div>
+    <div class="total-note" id="rk-total-note"></div>
+
+    <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+      <span style="font-size:13px; color:var(--text-sub); min-width:60px;">就職率</span>
+      <input type="number" id="rk-rate" min="0" max="100" value="65" oninput="calcAll()"
+        style="width:60px; font-size:14px; font-weight:500; border:0.5px solid var(--border-em); border-radius:6px; padding:4px 8px; background:var(--surface); color:var(--text); text-align:right;">
+      <span style="font-size:13px; color:var(--text-sub)">%</span>
+    </div>
+
+    <!-- 選考時の結果 -->
+    <div class="pre-results" style="margin-top:1rem;">
+      <div class="pre-card">
+        <p class="pre-label">予想 基本奨励金</p>
+        <p class="pre-val" id="pre-kihon">—</p>
+      </div>
+      <div class="pre-card featured">
+        <p class="pre-label">予想 付加奨励金</p>
+        <p class="pre-val" id="pre-kasan" style="color:var(--blue)">—</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= セクション2: 訓練中 ======= -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-number" style="background:var(--blue)">2</div>
+      <span class="section-title">訓練中</span>
+      <span class="section-subtitle">月次で更新</span>
+    </div>
+
+    <!-- 月別在籍人数 -->
+    <div class="monthly-section">
+      <div class="monthly-header">
+        <span style="font-size:11px; color:var(--text-hint); font-weight:500; letter-spacing:0.05em; text-transform:uppercase;">月別在籍人数</span>
+        <button onclick="resetMonthly()" style="font-size:11px; color:var(--amber); background:transparent; border:0.5px solid var(--amber); border-radius:4px; padding:2px 8px; cursor:pointer;">参考値に戻す</button>
+      </div>
+      <div class="monthly-hint">参考：ITコース平均減少率 -3.5% / -6.1% / -8.0% / -6.1% / -13.3% / -11.5%</div>
+      <div id="monthly-rows"></div>
+      <div class="monthly-avg">
+        <span class="ak">前半平均</span><span class="av" id="mo-zen-avg">—名</span>
+        <span class="ak" style="margin-left:8px">後半平均</span><span class="av" id="mo-ko-avg">—名</span>
+      </div>
+    </div>
+
+    <!-- 就職率予測（今後追加予定） -->
+    <div class="blank-section">
+      就職率予測（カルテデータ連携）— 今後追加予定
+    </div>
+
+    <!-- 訓練中の結果 -->
+    <div id="signal-box" class="signal-box">
+      <div class="signal-header">
+        <div class="signal-dot" id="signal-dot"></div>
+        <p class="signal-title" id="signal-title"></p>
+      </div>
+      <div class="signal-rows">
+        <div class="sig-row"><span class="sig-key">付加奨励金</span><span class="sig-val" id="sig-kasan"></span></div>
+        <div class="sig-row"><span class="sig-key">認定ライン</span><span class="sig-val" id="sig-nintei"></span></div>
+        <div class="sig-row"><span class="sig-key">付加単価</span><span class="sig-val" id="sig-unit"></span></div>
+        <div class="sig-row"><span class="sig-key">60%まで</span><span class="sig-val" id="sig-to60"></span></div>
+      </div>
+    </div>
+
+    <div class="result-cards">
+      <div class="result-card"><p class="rc-label">基本奨励金（前半）</p><p class="rc-val" id="o-kihon-zen">—</p></div>
+      <div class="result-card"><p class="rc-label">基本奨励金（後半）</p><p class="rc-val" id="o-kihon-ko">—</p></div>
+      <div class="result-card"><p class="rc-label">付加奨励金</p><p class="rc-val" id="o-kasan">—</p></div>
+      <div class="result-card featured"><p class="rc-label">トータル収益</p><p class="rc-val" id="o-total" style="color:var(--green)">—</p></div>
+    </div>
+
+    <div class="bar-section">
+      <div class="bar-row">
+        <span class="bar-label">基本（前半）</span>
+        <div class="bar-outer"><div class="bar-inner bar-green" id="bar-zen" style="width:0%"></div></div>
+        <span class="bar-yen" id="bar-zen-lbl">—</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">基本（後半）</span>
+        <div class="bar-outer"><div class="bar-inner bar-green-light" id="bar-ko" style="width:0%"></div></div>
+        <span class="bar-yen" id="bar-ko-lbl">—</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">付加</span>
+        <div class="bar-outer"><div class="bar-inner bar-blue" id="bar-kasan" style="width:0%"></div></div>
+        <span class="bar-yen" id="bar-kasan-lbl">—</span>
+      </div>
+    </div>
+
+
+  </div>
+
+  <!-- ======= セクション3: 結果入力 ======= -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-number" style="background:#888780">3</div>
+      <span class="section-title">結果入力</span>
+      <span class="section-subtitle">コース終了後に入力</span>
+    </div>
+
+    <!-- 月別在籍実績 -->
+    <p class="sec-label">月別在籍実績人数</p>
+    <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:6px; margin-bottom:1.25rem;">
+      <div style="text-align:center;">
+        <div style="font-size:11px; color:#1D9E75; font-weight:500; margin-bottom:4px;">1ヶ月目</div>
+        <input type="number" id="res-m1" min="0" max="99" value="" placeholder="—" oninput="calcResult()"
+          style="width:100%; font-size:14px; font-weight:500; border:0.5px solid var(--border-em); border-radius:6px; padding:6px 4px; background:var(--surface); color:var(--text); text-align:center;">
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:11px; color:#1D9E75; font-weight:500; margin-bottom:4px;">2ヶ月目</div>
+        <input type="number" id="res-m2" min="0" max="99" value="" placeholder="—" oninput="calcResult()"
+          style="width:100%; font-size:14px; font-weight:500; border:0.5px solid var(--border-em); border-radius:6px; padding:6px 4px; background:var(--surface); color:var(--text); text-align:center;">
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:11px; color:#1D9E75; font-weight:500; margin-bottom:4px;">3ヶ月目</div>
+        <input type="number" id="res-m3" min="0" max="99" value="" placeholder="—" oninput="calcResult()"
+          style="width:100%; font-size:14px; font-weight:500; border:0.5px solid var(--border-em); border-radius:6px; padding:6px 4px; background:var(--surface); color:var(--text); text-align:center;">
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:11px; color:#BA7517; font-weight:500; margin-bottom:4px;">4ヶ月目</div>
+        <input type="number" id="res-m4" min="0" max="99" value="" placeholder="—" oninput="calcResult()"
+          style="width:100%; font-size:14px; font-weight:500; border:0.5px solid var(--border-em); border-radius:6px; padding:6px 4px; background:var(--surface); color:var(--text); text-align:center;">
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:11px; color:#BA7517; font-weight:500; margin-bottom:4px;">5ヶ月目</div>
+        <input type="number" id="res-m5" min="0" max="99" value="" placeholder="—" oninput="calcResult()"
+          style="width:100%; font-size:14px; font-weight:500; border:0.5px solid var(--border-em); border-radius:6px; padding:6px 4px; background:var(--surface); color:var(--text); text-align:center;">
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:11px; color:#BA7517; font-weight:500; margin-bottom:4px;">6ヶ月目</div>
+        <input type="number" id="res-m6" min="0" max="99" value="" placeholder="—" oninput="calcResult()"
+          style="width:100%; font-size:14px; font-weight:500; border:0.5px solid var(--border-em); border-radius:6px; padding:6px 4px; background:var(--surface); color:var(--text); text-align:center;">
+      </div>
+    </div>
+
+    <!-- 修了・就職 -->
+    <p class="sec-label">就職実績</p>
+    <div style="font-size:11px; color:var(--text-hint); margin-bottom:10px;">母数＝就職中退＋修了後未就職＋修了後就職（自己都合中退・未修了は含まない）</div>
+    <div class="input-row">
+      <label>母数（名）</label>
+      <input type="range" id="res-bossuu" min="0" max="25" step="1" value="0" oninput="calcResult()">
+      <span class="val" id="res-bossuu-out">0名</span>
+    </div>
+    <div class="input-row" style="margin-bottom:1rem">
+      <label>就職者（名）</label>
+      <input type="range" id="res-shushoku" min="0" max="25" step="1" value="0" oninput="calcResult()">
+      <span class="val" id="res-shushoku-out">0名</span>
+    </div>
+
+    <!-- 結果カード -->
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:6px;">
+      <div class="pre-card" style="background:var(--surface2);">
+        <p class="pre-label">予測 基本奨励金</p>
+        <p class="pre-val" style="font-size:15px; color:var(--text-hint);" id="res-kihon-pred">—</p>
+      </div>
+      <div class="pre-card" style="background:var(--surface2);">
+        <p class="pre-label">予測 付加奨励金</p>
+        <p class="pre-val" style="font-size:15px; color:var(--text-hint);" id="res-kasan-pred">—</p>
+      </div>
+      <div class="pre-card" style="background:var(--surface2);">
+        <p class="pre-label">予測 トータル</p>
+        <p class="pre-val" style="font-size:15px; color:var(--text-hint);" id="res-total-pred">—</p>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:6px;">
+      <div class="pre-card">
+        <p class="pre-label">実績 基本奨励金</p>
+        <p class="pre-val" style="font-size:15px;" id="res-kihon">—</p>
+      </div>
+      <div class="pre-card">
+        <p class="pre-label">実績 付加奨励金</p>
+        <p class="pre-val" style="font-size:15px; color:var(--blue);" id="res-kasan">—</p>
+      </div>
+      <div class="pre-card featured">
+        <p class="pre-label">実績 トータル</p>
+        <p class="pre-val" style="font-size:15px; color:var(--green);" id="res-total">—</p>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:6px;">
+      <div class="pre-card" style="border:0.5px solid var(--border-em);">
+        <p class="pre-label">基本奨励金 誤差</p>
+        <p class="pre-val" style="font-size:15px;" id="res-diff-kihon">—</p>
+      </div>
+      <div class="pre-card" style="border:0.5px solid var(--border-em);">
+        <p class="pre-label">付加奨励金 誤差</p>
+        <p class="pre-val" style="font-size:15px;" id="res-diff-kasan">—</p>
+      </div>
+      <div class="pre-card" style="border:0.5px solid var(--border-em);">
+        <p class="pre-label">トータル 誤差</p>
+        <p class="pre-val" style="font-size:15px;" id="res-diff">—</p>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;">
+      <div class="pre-card" style="background:var(--surface2);">
+        <p class="pre-label">予測 就職率</p>
+        <p class="pre-val" style="font-size:15px; color:var(--text-hint);" id="res-rate-pred">—</p>
+      </div>
+      <div class="pre-card">
+        <p class="pre-label">実績 就職率</p>
+        <p class="pre-val" style="font-size:15px; color:var(--green);" id="res-rate-actual">—</p>
+      </div>
+      <div class="pre-card" style="border:0.5px solid var(--border-em);">
+        <p class="pre-label">就職率 誤差</p>
+        <p class="pre-val" style="font-size:15px;" id="res-diff-rate">—</p>
+      </div>
+    </div>
+
+    <!-- CSVダウンロード -->
+    <div style="margin-top:1.25rem; padding-top:1rem; border-top:0.5px solid var(--border);">
+      <button onclick="downloadCSV()" style="width:100%; padding:12px; font-size:14px; font-weight:500; font-family:inherit; color:#fff; background:var(--green); border:none; border-radius:8px; cursor:pointer;">
+        📥 このコースの記録をCSVで出力
+      </button>
+      <p style="font-size:11px; color:var(--text-hint); text-align:center; margin-top:6px;">選考時・訓練中・結果の入力値をまとめて出力します</p>
+    </div>
+  </div>
+
+  <footer>ジョブトレ 教育部門 内部ツール｜数値は過去実績に基づく予測値です</footer>
+</div>
+
+<script>
+const KIHON = 53000, MAX_BAR = 6000000;
+const AVG_DECAY = [-0.035, -0.061, -0.080, -0.061, -0.133, -0.115];
+
+function fmt(n) { return Math.round(n / 10000) + '万円'; }
+
+function calcDefaultMonthly(teiin) {
+  let cur = teiin, vals = [];
+  for (let i = 0; i < 6; i++) {
+    cur = Math.max(0, Math.round(cur * (1 + AVG_DECAY[i])));
+    vals.push(cur);
+  }
+  return vals;
+}
+
+function buildMonthlyRows(teiin, defaults) {
+  const container = document.getElementById('monthly-rows');
+  container.innerHTML = '';
+  for (let m = 0; m < 6; m++) {
+    const color = m < 3 ? '#1D9E75' : '#BA7517';
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:6px;';
+    row.innerHTML = `
+      <span style="font-size:12px;color:${color};font-weight:500;min-width:52px;">${m+1}ヶ月目</span>
+      <input type="range" id="mo-m${m+1}" min="0" max="${teiin}" step="1" value="${defaults[m]}" oninput="onMonthlyInput()" style="flex:1;-webkit-appearance:none;height:4px;border-radius:2px;background:rgba(0,0,0,0.1);outline:none;">
+      <span style="font-size:13px;font-weight:500;min-width:40px;text-align:right;" id="mo-m${m+1}-out">${defaults[m]}名</span>
+    `;
+    container.appendChild(row);
+    // サムスタイル追加
+    const slider = row.querySelector('input');
+    slider.style.setProperty('--thumb-color', color);
+  }
+}
+
+function getMonthlyVals() {
+  const vals = [];
+  for (let m = 1; m <= 6; m++) {
+    const el = document.getElementById('mo-m' + m);
+    vals.push(el ? parseInt(el.value) : 0);
+  }
+  return vals;
+}
+
+function onMonthlyInput() {
+  const vals = getMonthlyVals();
+  for (let m = 1; m <= 6; m++) {
+    document.getElementById('mo-m' + m + '-out').textContent = vals[m-1] + '名';
+  }
+  renderTraining(vals);
+}
+
+function resetMonthly() {
+  const teiin = parseInt(document.getElementById('rk-teiin').value);
+  buildMonthlyRows(teiin, calcDefaultMonthly(teiin));
+  onMonthlyInput();
+}
+
+function renderPreResults(teiin, zenRate, koRate, empRate) {
+  const kihon = Math.round(teiin * zenRate) * KIHON * 3 + Math.round(teiin * koRate) * KIHON * 3;
+  const kasanUnit = empRate >= 60 ? 20000 : empRate >= 35 ? 10000 : 0;
+  const kasan = Math.round(teiin * koRate) * kasanUnit * 6;
+  document.getElementById('pre-kihon').textContent = fmt(kihon);
+  document.getElementById('pre-kasan').textContent = fmt(kasan);
+}
+
+function renderTraining(vals) {
+  const teiin  = parseInt(document.getElementById('rk-teiin').value);
+  const empRate = parseInt(document.getElementById('rk-rate').value) || 0;
+  const zenAvg = (vals[0] + vals[1] + vals[2]) / 3;
+  const koAvg  = (vals[3] + vals[4] + vals[5]) / 3;
+
+  document.getElementById('mo-zen-avg').textContent = Math.round(zenAvg) + '名';
+  document.getElementById('mo-ko-avg').textContent  = Math.round(koAvg)  + '名';
+
+  const kihonZen = Math.round(zenAvg) * KIHON * 3;
+  const kihonKo  = Math.round(koAvg)  * KIHON * 3;
+  const kasanUnit = empRate >= 60 ? 20000 : empRate >= 35 ? 10000 : 0;
+  const kasan    = Math.round(koAvg) * kasanUnit * 6;
+  const total    = kihonZen + kihonKo + kasan;
+
+  document.getElementById('o-kihon-zen').textContent = fmt(kihonZen);
+  document.getElementById('o-kihon-ko').textContent  = fmt(kihonKo);
+  document.getElementById('o-kasan').textContent     = fmt(kasan);
+  document.getElementById('o-total').textContent     = fmt(total);
+  
+  document.getElementById('bar-zen-lbl').textContent   = fmt(kihonZen);
+  document.getElementById('bar-ko-lbl').textContent    = fmt(kihonKo);
+  document.getElementById('bar-kasan-lbl').textContent = fmt(kasan);
+  document.getElementById('bar-zen').style.width   = Math.min(100, kihonZen / MAX_BAR * 100) + '%';
+  document.getElementById('bar-ko').style.width    = Math.min(100, kihonKo  / MAX_BAR * 100) + '%';
+  document.getElementById('bar-kasan').style.width = Math.min(100, kasan    / MAX_BAR * 100) + '%';
+
+  const dot = document.getElementById('signal-dot');
+  const box = document.getElementById('signal-box');
+  const nintei = document.getElementById('sig-nintei');
+  if (empRate >= 80) {
+    dot.style.background = box.style.borderColor = '#1D9E75';
+    document.getElementById('signal-title').textContent = '安全圏：付加奨励金・認定ともに問題なし';
+    document.getElementById('sig-kasan').textContent = '取得 (2万円)';
+    nintei.textContent = '安全'; nintei.style.color = '#0F6E56';
+  } else if (empRate >= 60) {
+    dot.style.background = box.style.borderColor = '#BA7517';
+    document.getElementById('signal-title').textContent = '注意：付加奨励金は取れるが認定ラインに注意';
+    document.getElementById('sig-kasan').textContent = '取得 (2万円)';
+    nintei.textContent = '要注意 (80%目標)'; nintei.style.color = '#854F0B';
+  } else if (empRate >= 35) {
+    dot.style.background = box.style.borderColor = '#D85A30';
+    document.getElementById('signal-title').textContent = '危険：付加奨励金が半減・認定ライン未達';
+    document.getElementById('sig-kasan').textContent = '半額 (1万円)';
+    nintei.textContent = '未達'; nintei.style.color = '#993C1D';
+  } else {
+    dot.style.background = box.style.borderColor = '#A32D2D';
+    document.getElementById('signal-title').textContent = '警告：付加奨励金ゼロ・認定リスク大';
+    document.getElementById('sig-kasan').textContent = 'ゼロ';
+    nintei.textContent = '危険'; nintei.style.color = '#A32D2D';
+  }
+  document.getElementById('sig-unit').textContent = kasanUnit === 20000 ? '2万円/人' : kasanUnit === 10000 ? '1万円/人' : '0円';
+  document.getElementById('sig-to60').textContent = empRate >= 60 ? '達成済み' : (60 - empRate) + '%不足';
+}
+
+function calcAll() {
+  const teiin = parseInt(document.getElementById('rk-teiin').value);
+  const low   = parseInt(document.getElementById('rk-low').value);
+  const mid   = parseInt(document.getElementById('rk-mid').value);
+  const high  = parseInt(document.getElementById('rk-high').value);
+  const rate  = parseInt(document.getElementById('rk-rate').value) || 0;
+
+  document.getElementById('rk-teiin-out').textContent = teiin + '名';
+  document.getElementById('rk-low-out').textContent   = low   + '名';
+  document.getElementById('rk-mid-out').textContent   = mid   + '名';
+  document.getElementById('rk-high-out').textContent  = high  + '名';
+
+  const total = low + mid + high;
+  const note  = document.getElementById('rk-total-note');
+  if (total > teiin) {
+    note.textContent = '⚠ 合計' + total + '名が定員' + teiin + '名を超えています';
+    note.style.color = '#E24B4A';
+  } else {
+    note.textContent = '合計 ' + total + '名 / 定員 ' + teiin + '名';
+    note.style.color = '';
+  }
+
+  // 選考時の結果
+  const predKoRate  = total > 0 ? (low * 0.85 + mid * 0.70 + high * 0.55) / total : 0.70;
+  const predZenRate = 1 - (1 - predKoRate) * 0.3;
+  renderPreResults(teiin, predZenRate, predKoRate, rate);
+
+  // 月別スライダー更新（定員変更時にmax値を更新）
+  const existing = document.getElementById('mo-m1');
+  if (!existing) {
+    buildMonthlyRows(teiin, calcDefaultMonthly(teiin));
+  } else {
+    for (let m = 1; m <= 6; m++) {
+      const el = document.getElementById('mo-m' + m);
+      if (el) el.max = teiin;
+    }
+  }
+  onMonthlyInput();
+}
+
+function fmtDiff(diff) {
+  return (diff >= 0 ? '+' : '') + Math.round(diff / 10000) + '万円';
+}
+
+function calcResult() {
+  const shushoku = parseInt(document.getElementById('res-shushoku').value);
+  document.getElementById('res-shushoku-out').textContent = shushoku + '名';
+
+  // 就職率の計算（機構定義）
+  // 分子：修了就職 + 就職退校
+  // 分母：修了人数 + 就職退校（未就職修了者も含む）
+  const bossuu = parseInt(document.getElementById('res-bossuu').value);
+  document.getElementById('res-bossuu-out').textContent = bossuu + '名';
+  // 就職率 = 就職者 ÷ 母数
+  const actualRate = bossuu > 0 ? Math.round(shushoku / bossuu * 100) : null;
+
+  // 予測就職率
+  const predRate = parseInt(document.getElementById('rk-rate').value) || null;
+  document.getElementById('res-rate-pred').textContent = predRate !== null ? predRate + '%' : '—';
+  document.getElementById('res-rate-actual').textContent = actualRate !== null ? actualRate + '%' : '—';
+
+  // 就職率誤差
+  const diffRateEl = document.getElementById('res-diff-rate');
+  if (actualRate !== null && predRate !== null) {
+    const d = actualRate - predRate;
+    diffRateEl.textContent = (d >= 0 ? '+' : '') + d + '%';
+    diffRateEl.style.color = d >= 0 ? 'var(--green)' : 'var(--coral)';
+  } else { diffRateEl.textContent = '—'; diffRateEl.style.color = ''; }
+
+  const teiin = parseInt(document.getElementById('rk-teiin').value);
+
+  // 月別在籍実績
+  const vals = [];
+  let allFilled = true;
+  for (let m = 1; m <= 6; m++) {
+    const v = parseInt(document.getElementById('res-m' + m).value);
+    if (isNaN(v)) { allFilled = false; break; }
+    vals.push(v);
+  }
+
+  // 選考時の予測値
+  const predKihonText = document.getElementById('pre-kihon').textContent;
+  const predKasanText = document.getElementById('pre-kasan').textContent;
+  const predKihon = predKihonText !== '—' ? Math.round(parseFloat(predKihonText) * 10000) : null;
+  const predKasan = predKasanText !== '—' ? Math.round(parseFloat(predKasanText) * 10000) : null;
+  document.getElementById('res-kihon-pred').textContent = predKihonText;
+  document.getElementById('res-kasan-pred').textContent = predKasanText;
+  document.getElementById('res-total-pred').textContent =
+    (predKihon !== null && predKasan !== null) ? fmt(predKihon + predKasan) : '—';
+
+  if (allFilled && vals.length === 6) {
+    const zenAvg = (vals[0] + vals[1] + vals[2]) / 3;
+    const koAvg  = (vals[3] + vals[4] + vals[5]) / 3;
+    const resKihon = Math.round(zenAvg) * KIHON * 3 + Math.round(koAvg) * KIHON * 3;
+    const kasanUnit = actualRate !== null ? (actualRate >= 60 ? 20000 : actualRate >= 35 ? 10000 : 0) : 0;
+    const resKasan  = Math.round(koAvg) * kasanUnit * 6;
+    const resTotal  = resKihon + resKasan;
+
+    document.getElementById('res-kihon').textContent = fmt(resKihon);
+    document.getElementById('res-kasan').textContent = fmt(resKasan);
+    document.getElementById('res-total').textContent = fmt(resTotal);
+
+    // 奨励金誤差
+    const setDiff = (id, actual, pred) => {
+      const el = document.getElementById(id);
+      if (actual !== null && pred !== null) {
+        const d = actual - pred;
+        el.textContent = fmtDiff(d);
+        el.style.color = d >= 0 ? 'var(--green)' : 'var(--coral)';
+      } else { el.textContent = '—'; el.style.color = ''; }
+    };
+    setDiff('res-diff-kihon', resKihon, predKihon);
+    setDiff('res-diff-kasan', resKasan, predKasan);
+    setDiff('res-diff', resTotal, predKihon !== null && predKasan !== null ? predKihon + predKasan : null);
+  } else {
+    ['res-kihon','res-kasan','res-total','res-diff-kihon','res-diff-kasan','res-diff'].forEach(id => {
+      document.getElementById(id).textContent = '—';
+      document.getElementById(id).style.color = '';
+    });
+  }
+}
+
+function downloadCSV() {
+  const g = id => { const el = document.getElementById(id); return el ? el.textContent.trim() : ''; };
+  const gv = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+
+  // 月別在籍（訓練中：スライダー）
+  const moVals = [];
+  for (let m = 1; m <= 6; m++) {
+    const el = document.getElementById('mo-m' + m);
+    moVals.push(el ? el.value : '');
+  }
+
+  // 月別在籍（結果：テキスト入力）
+  const resVals = [];
+  for (let m = 1; m <= 6; m++) {
+    const el = document.getElementById('res-m' + m);
+    resVals.push(el ? el.value : '');
+  }
+
+  const now = new Date();
+  const dateStr = now.getFullYear() + '/' + (now.getMonth()+1) + '/' + now.getDate();
+
+  const headers = [
+    '出力日',
+    // 選考時
+    '定員', 'リスク低', 'リスク中', 'リスク高', '予測就職率(%)',
+    '予想基本奨励金', '予想付加奨励金',
+    // 訓練中
+    '在籍1ヶ月', '在籍2ヶ月', '在籍3ヶ月', '在籍4ヶ月', '在籍5ヶ月', '在籍6ヶ月',
+    '前半平均在籍', '後半平均在籍',
+    // 結果
+    '実績在籍1ヶ月', '実績在籍2ヶ月', '実績在籍3ヶ月', '実績在籍4ヶ月', '実績在籍5ヶ月', '実績在籍6ヶ月',
+    '母数', '就職者数',
+    '実績基本奨励金', '実績付加奨励金', '実績トータル',
+    '予測就職率', '実績就職率', '就職率誤差',
+    '基本奨励金誤差', '付加奨励金誤差', 'トータル誤差'
+  ];
+
+  const values = [
+    dateStr,
+    gv('rk-teiin'), gv('rk-low'), gv('rk-mid'), gv('rk-high'), gv('rk-rate'),
+    g('pre-kihon'), g('pre-kasan'),
+    ...moVals,
+    g('mo-zen-avg').replace('名',''), g('mo-ko-avg').replace('名',''),
+    ...resVals,
+    gv('res-bossuu'), gv('res-shushoku'),
+    g('res-kihon'), g('res-kasan'), g('res-total'),
+    g('res-rate-pred'), g('res-rate-actual'), g('res-diff-rate'),
+    g('res-diff-kihon'), g('res-diff-kasan'), g('res-diff')
+  ];
+
+  const csv = '\uFEFF' + headers.join(',') + '\n' + values.map(v => '"' + v + '"').join(',');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'jobtore_simulator_' + now.getFullYear() + ('0'+(now.getMonth()+1)).slice(-2) + ('0'+now.getDate()).slice(-2) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// 初期化
+calcAll();
+calcResult();
+</script>
+</body>
+</html>
